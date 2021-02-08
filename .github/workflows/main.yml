@@ -1,0 +1,43 @@
+
+name: CI
+
+# Triggers the workflow on pull request 
+# events but only for the master branch
+on:
+  pull_request:
+    branches: [ master ]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        python-version: [3.6]
+
+    steps:
+    - uses: VisiumCH/checkout@v2
+      
+    - name: Set up Python ${{ matrix.python-version }}
+      uses: VisiumCH/setup-python@v2
+      with:
+        python-version: ${{ matrix.python-version }}
+
+    - name: Install dependencies
+      run: make requirements
+      env:
+        VIRTUAL_ENV: TRUE
+
+    - name: Lint with flake8
+      run: |
+        pip install flake8
+        make lint
+      env:
+        VIRTUAL_ENV: TRUE
+
+    - name: Test with coverage
+      run: |
+        pip3 install coverage
+        make test
+      env:
+        VIRTUAL_ENV: TRUE
+

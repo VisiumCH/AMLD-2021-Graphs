@@ -1,0 +1,13 @@
+# /!\ /!\ /!\ /!\ /!\ /!\ /!\
+# IMPORTANT: Please add each project library's license next to it as a comment, please check predefined requirements as an example.
+# /!\ /!\ /!\ /!\ /!\ /!\ /!\
+
+# meta requirements
+virtualenv
+
+# external requirements
+click           # BSD-3-Clause
+sphinx          # BSD-3-Clause 
+coverage        # MIT
+flake8          # MIT
+python-dotenv   # BSD-3-Clause

@@ -1,0 +1,109 @@
+
+\documentclass[a4paper]{article}
+%\usepackage[utf8]{inputenc}
+\usepackage[vmargin=1.3in,hmargin=1.25in]{geometry}
+\usepackage[pages=all]{background}
+\usepackage{titlesec}
+\usepackage{titling}
+\usepackage{fontspec} % For custom fonts
+\usepackage{xcolor} % For declaring custom colors
+\usepackage{appendix} % For Appendix
+\usepackage{hyperref} % For referencing
+\usepackage{booktabs} % For tables
+\usepackage{float} % For figures
+\usepackage{subcaption} % For figures
+\usepackage{lscape} % To put things in landscape mode
+\usepackage{amsmath} % For maths 
+\usepackage{amssymb} % More maths symbols
+\usepackage[super]{nth} % to write 3^rd and 4^th automatically
+\usepackage{minted} % For code snippets 
+\usepackage{enumerate} % For enumerate instead of itemize
+\usepackage[inline]{enumitem}
+\usepackage{todonotes} % Easy todo notes visible in the PDF
+\usepackage{svg} % Useful to handle svg graphics
+\usepackage{cleveref} % Helper for references. Use \cref or \Cref instead of \ref
+\usepackage{fancyhdr} % Needed for header/footer
+\usepackage{fontspec} %To use Open Sans
+%\setmainfont[Scale=0.95]{Open Sans}
+
+\pagestyle{fancy}
+\fancyhf{}
+\renewcommand{\headrulewidth}{0pt}
+\rfoot{\thepage}
+
+\graphicspath{{figures/}{bg_images/}}
+\parindent=0em
+\parskip=0.5em
+
+% Setup background
+% Select the correct BG images depending if you use letter or a4 format
+\backgroundsetup{
+scale=1,
+color=black,
+opacity=1.0,
+angle=0,
+contents={%
+  \ifnum\value{page}>1 \includegraphics[width=\paperwidth,height=\paperheight, keepaspectratio]{other_page_a4_no_footer.pdf} \else\includegraphics[width=\paperwidth,height=\paperheight, keepaspectratio]{first_page_a4.pdf}\fi
+  }%
+}
+
+% Define light and dark Microsoft blue colours
+\definecolor{MSBlue}{rgb}{.204,.353,.541}
+\definecolor{MSLightBlue}{rgb}{.31,.506,.741}
+
+% Define a new fontfamily for the subsubsection font
+% Don't use \fontspec directly to change the font
+\newfontfamily\subsubsectionfont[Color=MSLightBlue]{Open Sans}
+\newfontfamily\headingfont[Color=MSLightBlue]{Open Sans}
+\newfontfamily\titlefont[Color=MSBlue]{Open Sans}
+\titleformat*{\section}{\LARGE\headingfont}
+\titleformat*{\subsection}{\Large\headingfont}
+\titleformat*{\subsubsection}{\large\headingfont}
+\renewcommand{\maketitlehooka}{\titlefont}
+
+%
+\newcommand*{\email}[1]{%
+    \normalsize\href{mailto:#1}{#1}\par
+    }
+
+% Define author commands for commenting    
+\newcommand{\GR}[1]{\textcolor{red}{GAETAN: #1}}
+
+    
+    
+%%% START EDITING HERE %%%
+% Title of the Report
+\title{Project Report Template Visium}
+%\author{Ga\'etan Ramet\\ \email{gr@visium.ch} \and Second author \\ \email{mail@visium.ch}}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\setlength{\headheight}{25pt}
+\thispagestyle{fancy}
+
+\input{sections/introduction.tex}
+
+\input{sections/description.tex}
+
+\input{sections/analysis.tex}
+
+\input{sections/goodpractices.tex}
+
+\input{sections/results.tex}
+
+\input{sections/conclusion.tex}
+
+\newpage
+\bibliographystyle{unsrt}
+\bibliography{bibliography}
+
+\newpage
+\appendix 
+\section{Appendix}
+\label{sec:appendix}
+<Put your appendices here (tables, figures, maths, etc...)>
+
+
+\end{document}
