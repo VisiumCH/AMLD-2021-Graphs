@@ -1,13 +1,13 @@
-# /!\ /!\ /!\ /!\ /!\ /!\ /!\
-# IMPORTANT: Please add each project library's license next to it as a comment, please check predefined requirements as an example.
-# /!\ /!\ /!\ /!\ /!\ /!\ /!\
-
-# meta requirements
-virtualenv
-
-# external requirements
-click           # BSD-3-Clause
-sphinx          # BSD-3-Clause 
-coverage        # MIT
-flake8          # MIT
-python-dotenv   # BSD-3-Clause
+tensorboardX==1.9
+torch==1.6.0
+torchvision==0.7.0
+sklearn==0.0
+pandas==0.25.3
+opencv-python==4.4.0.44
+networkx==2.4
+matplotlib==3.2.0
+tensorboard==2.0.0
+jupyter==1.0.0
+ipywidgets==7.5.1
+seaborn
+visions==0.4.4
