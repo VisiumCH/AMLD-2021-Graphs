@@ -4,6 +4,7 @@
 """
 import argparse
 import os
+import numpy as np
 
 import sklearn.metrics as metrics
 
@@ -17,7 +18,7 @@ import configs_explainer
 
 import src.GNNtrainer.models as models
 import src.utils.io_utils as io_utils
-from explainer import Explainer
+from explainer import Explainer, train_explainer
 
 
 def main():
@@ -70,28 +71,44 @@ def main():
     )
     if prog_args.gpu:
         model = model.cuda()
-    # load state_dict (obtained by model.state_dict() when saving checkpoint)
+
+    # Load state_dict (obtained by model.state_dict() when saving checkpoint)
     model.load_state_dict(ckpt["model_state"])
+    model = model.eval()
+
+    # Extract the data relative to the chosen graph.
+    adj = cg_dict["adj"]
+    feat = cg_dict["feat"]
+    label = cg_dict["label"]
+    pred = cg_dict["pred"]
+
+    graph_idx = prog_args.graph_idx
+    sub_adj = adj[graph_idx]
+    sub_feat = feat[graph_idx, :]
+    sub_label = label[graph_idx]
+    neighbors = np.asarray(range(adj.shape[0]))
+
+    sub_adj = np.expand_dims(sub_adj, axis=0)
+    sub_feat = np.expand_dims(sub_feat, axis=0)
+
+    adj = torch.tensor(sub_adj, dtype=torch.float)
+    x = torch.tensor(sub_feat, requires_grad=True, dtype=torch.float)
+    label = torch.tensor(sub_label, dtype=torch.long)
 
     # Create explainer
     explainer = Explainer(
         model=model,
-        adj=cg_dict["adj"],
-        feat=cg_dict["feat"],
-        label=cg_dict["label"],
-        pred=cg_dict["pred"],
-        train_idx=cg_dict["train_idx"],
+        adj=adj,
+        x=x,
+        label=label,
         args=prog_args,
         writer=writer,
-        print_training=True,
         graph_idx=prog_args.graph_idx,
     )
 
     # Run explainer.
-    explainer.explain(
-        node_idx=0,
-        graph_idx=prog_args.graph_idx,
-        unconstrained=False,
+    train_explainer(
+        explainer=explainer, pred=pred, args=prog_args, graph_idx=prog_args.graph_idx
     )
     io_utils.plot_cmap_tb(writer, "tab20", 20, "tab20_cmap")
 

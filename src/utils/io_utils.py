@@ -192,7 +192,6 @@ def log_matrix(writer, mat, name, epoch, fig_size=(8, 6), dpi=200):
 
 def denoise_graph(
     adj,
-    node_idx,
     feat=None,
     label=None,
     threshold=None,
@@ -203,7 +202,6 @@ def denoise_graph(
 
     Args:
         - adj               :  Adjacency matrix.
-        - node_idx          :  Index of node to highlight (TODO ?)
         - feat              :  An array of node features.
         - label             :  A list of node labels.
         - threshold         :  The weight threshold.
@@ -213,7 +211,6 @@ def denoise_graph(
     num_nodes = adj.shape[-1]
     G = nx.Graph()
     G.add_nodes_from(range(num_nodes))
-    G.nodes[node_idx]["self"] = 1
     if feat is not None:
         for node in G.nodes():
             G.nodes[node]["feat"] = feat[node]
