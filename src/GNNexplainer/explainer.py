@@ -99,6 +99,7 @@ class Explainer:
             writer=self.writer,
             graph_idx=self.graph_idx,
         )
+
         if self.args.gpu:
             explainer = explainer.cuda()
 
@@ -116,6 +117,8 @@ class Explainer:
             masked_adj = masked_adj.cpu().detach().numpy() * sub_adj.squeeze()
         else:
             explainer.train()
+            # Initialize logger for images in tensorboard.
+            logger = ExplainerLogger(explainer)
             begin_time = time.time()
             for epoch in range(self.args.num_epochs):
                 explainer.zero_grad()
@@ -150,14 +153,14 @@ class Explainer:
                         epoch,
                     )
                     if epoch % 25 == 0:
-                        explainer.log_mask(epoch)
+                        logger.log_mask(epoch)
                         #### MODIFIED HERE (COMMENTED)
-                        # explainer.log_masked_adj(
+                        # logger.log_masked_adj(
                         #    node_idx_new, epoch, label=single_subgraph_label
                         # )
 
                         #### MODIFIED HERE (COMMENTED)
-                        # explainer.log_adj_grad(
+                        # logger.log_adj_grad(
                         #    node_idx_new, pred_label, epoch, label=single_subgraph_label
                         # )
 
@@ -407,29 +410,6 @@ class ExplainModule(nn.Module):
             res = nn.Softmax(dim=0)(node_pred)
         return res, adj_att
 
-    def adj_feat_grad(self, node_idx, pred_label_node):
-        self.model.zero_grad()
-        self.adj.requires_grad = True
-        self.x.requires_grad = True
-        if self.adj.grad is not None:
-            self.adj.grad.zero_()
-            self.x.grad.zero_()
-        if self.args.gpu:
-            adj = self.adj.cuda()
-            x = self.x.cuda()
-            label = self.label.cuda()
-        else:
-            x, adj = self.x, self.adj
-        ypred, _ = self.model(x, adj)
-        if self.graph_mode:
-            logit = nn.Softmax(dim=0)(ypred[0])
-        else:
-            logit = nn.Softmax(dim=0)(ypred[self.graph_idx, node_idx, :])
-        logit = logit[pred_label_node]
-        loss = -torch.log(logit)
-        loss.backward()
-        return self.adj.grad, self.x.grad
-
     def loss(self, pred, pred_label, node_idx, epoch):
         """
         Args:
@@ -485,19 +465,6 @@ class ExplainModule(nn.Module):
                 / self.adj.numel()
             )
 
-        # grad
-        # adj
-        # adj_grad, x_grad = self.adj_feat_grad(node_idx, pred_label_node)
-        # adj_grad = adj_grad[self.graph_idx]
-        # x_grad = x_grad[self.graph_idx]
-        # if self.args.gpu:
-        #    adj_grad = adj_grad.cuda()
-        # grad_loss = self.coeffs['grad'] * -torch.mean(torch.abs(adj_grad) * mask)
-
-        # feat
-        # x_grad_sum = torch.sum(x_grad, 1)
-        # grad_feat_loss = self.coeffs['featgrad'] * -torch.mean(x_grad_sum * mask)
-
         loss = pred_loss + size_loss + lap_loss + mask_ent_loss + feat_size_loss
         if self.writer is not None:
             self.writer.add_scalar("optimization/size_loss", size_loss, epoch)
@@ -512,44 +479,160 @@ class ExplainModule(nn.Module):
             self.writer.add_scalar("optimization/overall_loss", loss, epoch)
         return loss
 
+
+class ExplainerLogger:
+    def __init__(self, explainer):
+        self.explainer = explainer
+
+    def log_masked_adj(self, node_idx, epoch, name="mask/graph", label=None):
+        # use [0] to remove the batch dim
+        masked_adj = self.explainer.masked_adj[0].cpu().detach().numpy()
+
+        G = io_utils.denoise_graph(
+            masked_adj,
+            node_idx,
+            feat=self.x[0],
+            threshold=0.2,  # threshold_num=20,
+            max_component=True,
+        )
+        io_utils.log_graph(
+            self.writer,
+            G,
+            name=name,
+            identify_self=False,
+            nodecolor="feat",
+            epoch=epoch,
+            label_node_feat=True,
+            edge_vmax=None,
+            args=self.args,
+        )
+
+    def adj_feat_grad(self, node_idx, pred_label_node):
+        self.explainer.model.zero_grad()
+        self.explainer.adj.requires_grad = True
+        self.explainer.x.requires_grad = True
+        if self.explainer.adj.grad is not None:
+            self.explainer.adj.grad.zero_()
+            self.explainer.x.grad.zero_()
+        if self.explainer.args.gpu:
+            adj = self.explainer.adj.cuda()
+            x = self.explainer.x.cuda()
+            label = self.explainer.label.cuda()
+        else:
+            x, adj = self.explainer.x, self.adj
+        ypred, _ = self.explainer.model(x, adj)
+
+        logit = nn.Softmax(dim=0)(ypred[0])
+        logit = logit[pred_label_node]
+        loss = -torch.log(logit)
+        loss.backward()
+        return self.explainer.adj.grad, self.explainer.x.grad
+
+    def log_adj_grad(self, node_idx, pred_label, epoch, label=None):
+        log_adj = False
+
+        predicted_label = pred_label
+        # adj_grad, x_grad = torch.abs(self.adj_feat_grad(node_idx, predicted_label)[0])[0]
+        adj_grad, x_grad = self.explainer.adj_feat_grad(node_idx, predicted_label)
+        adj_grad = torch.abs(adj_grad)[0]
+        x_grad = torch.sum(x_grad[0], 0, keepdim=True).t()
+        adj_grad = (adj_grad + adj_grad.t()) / 2
+        adj_grad = (adj_grad * self.explainer.adj).squeeze()
+        if log_adj:
+            io_utils.log_matrix(
+                self.explainer.writer, adj_grad, "grad/adj_masked", epoch
+            )
+            self.explainer.adj.requires_grad = False
+            io_utils.log_matrix(
+                self.explainer.writer,
+                self.explainer.adj.squeeze(),
+                "grad/adj_orig",
+                epoch,
+            )
+
+        masked_adj = self.expplainer.masked_adj[0].cpu().detach().numpy()
+
+        # only for graph mode since many node neighborhoods for syn tasks are relatively large for
+        # visualization
+        G = io_utils.denoise_graph(
+            masked_adj,
+            node_idx,
+            feat=self.x[0],
+            threshold=None,
+            max_component=False,
+        )
+        io_utils.log_graph(
+            self.writer,
+            G,
+            name="grad/graph_orig",
+            epoch=epoch,
+            identify_self=False,
+            label_node_feat=True,
+            nodecolor="feat",
+            edge_vmax=None,
+            args=self.args,
+        )
+        io_utils.log_matrix(self.writer, x_grad, "grad/feat", epoch)
+
+        adj_grad = adj_grad.detach().numpy()
+        print("GRAPH model")
+        G = io_utils.denoise_graph(
+            adj_grad,
+            node_idx,
+            feat=self.x[0],
+            threshold=0.0003,  # threshold_num=20,
+            max_component=True,
+        )
+        io_utils.log_graph(
+            self.explainer.writer,
+            G,
+            name="grad/graph",
+            epoch=epoch,
+            identify_self=False,
+            label_node_feat=True,
+            nodecolor="feat",
+            edge_vmax=None,
+            args=self.args,
+        )
+
     def log_mask(self, epoch):
         plt.switch_backend("agg")
         fig = plt.figure(figsize=(4, 3), dpi=400)
-        plt.imshow(self.mask.cpu().detach().numpy(), cmap=plt.get_cmap("BuPu"))
+        plt.imshow(
+            self.explainer.mask.cpu().detach().numpy(), cmap=plt.get_cmap("BuPu")
+        )
         cbar = plt.colorbar()
         cbar.solids.set_edgecolor("face")
 
         plt.tight_layout()
         fig.canvas.draw()
-        self.writer.add_image(
+        self.explainer.writer.add_image(
             "mask/mask", tensorboardX.utils.figure_to_image(fig), epoch
         )
 
-        # fig = plt.figure(figsize=(4,3), dpi=400)
-        # plt.imshow(self.feat_mask.cpu().detach().numpy()[:,np.newaxis], cmap=plt.get_cmap('BuPu'))
-        # cbar = plt.colorbar()
-        # cbar.solids.set_edgecolor("face")
-
-        # plt.tight_layout()
-        # fig.canvas.draw()
-        # self.writer.add_image('mask/feat_mask', tensorboardX.utils.figure_to_image(fig), epoch)
         io_utils.log_matrix(
-            self.writer, torch.sigmoid(self.feat_mask), "mask/feat_mask", epoch
+            self.explainer.writer,
+            torch.sigmoid(self.explainer.feat_mask),
+            "mask/feat_mask",
+            epoch,
         )
 
         fig = plt.figure(figsize=(4, 3), dpi=400)
         # use [0] to remove the batch dim
-        plt.imshow(self.masked_adj[0].cpu().detach().numpy(), cmap=plt.get_cmap("BuPu"))
+        plt.imshow(
+            self.explainer.masked_adj[0].cpu().detach().numpy(),
+            cmap=plt.get_cmap("BuPu"),
+        )
         cbar = plt.colorbar()
         cbar.solids.set_edgecolor("face")
 
         plt.tight_layout()
         fig.canvas.draw()
-        self.writer.add_image(
+        self.explainer.writer.add_image(
             "mask/adj", tensorboardX.utils.figure_to_image(fig), epoch
         )
 
-        if self.args.mask_bias:
+        if self.explainer.args.mask_bias:
             fig = plt.figure(figsize=(4, 3), dpi=400)
             # use [0] to remove the batch dim
             plt.imshow(self.mask_bias.cpu().detach().numpy(), cmap=plt.get_cmap("BuPu"))
@@ -558,121 +641,6 @@ class ExplainModule(nn.Module):
 
             plt.tight_layout()
             fig.canvas.draw()
-            self.writer.add_image(
+            self.explainer.writer.add_image(
                 "mask/bias", tensorboardX.utils.figure_to_image(fig), epoch
-            )
-
-    def log_adj_grad(self, node_idx, pred_label, epoch, label=None):
-        log_adj = False
-
-        if self.graph_mode:
-            predicted_label = pred_label
-            # adj_grad, x_grad = torch.abs(self.adj_feat_grad(node_idx, predicted_label)[0])[0]
-            adj_grad, x_grad = self.adj_feat_grad(node_idx, predicted_label)
-            adj_grad = torch.abs(adj_grad)[0]
-            x_grad = torch.sum(x_grad[0], 0, keepdim=True).t()
-        else:
-            predicted_label = pred_label[node_idx]
-            # adj_grad = torch.abs(self.adj_feat_grad(node_idx, predicted_label)[0])[self.graph_idx]
-            adj_grad, x_grad = self.adj_feat_grad(node_idx, predicted_label)
-            adj_grad = torch.abs(adj_grad)[self.graph_idx]
-            x_grad = x_grad[self.graph_idx][node_idx][:, np.newaxis]
-            # x_grad = torch.sum(x_grad[self.graph_idx], 0, keepdim=True).t()
-        adj_grad = (adj_grad + adj_grad.t()) / 2
-        adj_grad = (adj_grad * self.adj).squeeze()
-        if log_adj:
-            io_utils.log_matrix(self.writer, adj_grad, "grad/adj_masked", epoch)
-            self.adj.requires_grad = False
-            io_utils.log_matrix(self.writer, self.adj.squeeze(), "grad/adj_orig", epoch)
-
-        masked_adj = self.masked_adj[0].cpu().detach().numpy()
-
-        # only for graph mode since many node neighborhoods for syn tasks are relatively large for
-        # visualization
-        if self.graph_mode:
-            G = io_utils.denoise_graph(
-                masked_adj,
-                node_idx,
-                feat=self.x[0],
-                threshold=None,
-                max_component=False,
-            )
-            io_utils.log_graph(
-                self.writer,
-                G,
-                name="grad/graph_orig",
-                epoch=epoch,
-                identify_self=False,
-                label_node_feat=True,
-                nodecolor="feat",
-                edge_vmax=None,
-                args=self.args,
-            )
-        io_utils.log_matrix(self.writer, x_grad, "grad/feat", epoch)
-
-        adj_grad = adj_grad.detach().numpy()
-        if self.graph_mode:
-            print("GRAPH model")
-            G = io_utils.denoise_graph(
-                adj_grad,
-                node_idx,
-                feat=self.x[0],
-                threshold=0.0003,  # threshold_num=20,
-                max_component=True,
-            )
-            io_utils.log_graph(
-                self.writer,
-                G,
-                name="grad/graph",
-                epoch=epoch,
-                identify_self=False,
-                label_node_feat=True,
-                nodecolor="feat",
-                edge_vmax=None,
-                args=self.args,
-            )
-        else:
-            # G = io_utils.denoise_graph(adj_grad, node_idx, label=label, threshold=0.5)
-            G = io_utils.denoise_graph(adj_grad, node_idx, threshold_num=12)
-            io_utils.log_graph(
-                self.writer, G, name="grad/graph", epoch=epoch, args=self.args
-            )
-
-        # if graph attention, also visualize att
-
-    def log_masked_adj(self, node_idx, epoch, name="mask/graph", label=None):
-        # use [0] to remove the batch dim
-        masked_adj = self.masked_adj[0].cpu().detach().numpy()
-        if self.graph_mode:
-            G = io_utils.denoise_graph(
-                masked_adj,
-                node_idx,
-                feat=self.x[0],
-                threshold=0.2,  # threshold_num=20,
-                max_component=True,
-            )
-            io_utils.log_graph(
-                self.writer,
-                G,
-                name=name,
-                identify_self=False,
-                nodecolor="feat",
-                epoch=epoch,
-                label_node_feat=True,
-                edge_vmax=None,
-                args=self.args,
-            )
-        else:
-            G = io_utils.denoise_graph(
-                masked_adj, node_idx, threshold_num=12, max_component=True
-            )
-            io_utils.log_graph(
-                self.writer,
-                G,
-                name=name,
-                identify_self=True,
-                nodecolor="label",
-                epoch=epoch,
-                edge_vmax=None,
-                args=self.args,
             )
