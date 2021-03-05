@@ -6,6 +6,8 @@ import torch.nn.functional as F
 import numpy as np
 
 # GCN basic operation
+
+
 class GraphConv(nn.Module):
     def __init__(
         self,
@@ -227,7 +229,6 @@ class GcnEncoderGraph(nn.Module):
     def gcn_forward(
         self, x, adj, conv_first, conv_block, conv_last, embedding_mask=None
     ):
-
         """Perform forward prop with graph convolution.
         Returns:
             Embedding matrix with dimension [batch_size x num_nodes x embedding]
@@ -516,15 +517,6 @@ class SoftPoolingGcnEncoder(GcnEncoderGraph):
             embedding_mask = None
 
         out_all = []
-
-        # self.assign_tensor = self.gcn_forward(x_a, adj,
-        #        self.assign_conv_first_modules[0], self.assign_conv_block_modules[0], self.assign_conv_last_modules[0],
-        #        embedding_mask)
-        ## [batch_size x num_nodes x next_lvl_num_nodes]
-        # self.assign_tensor = nn.Softmax(dim=-1)(self.assign_pred(self.assign_tensor))
-        # if embedding_mask is not None:
-        #    self.assign_tensor = self.assign_tensor * embedding_mask
-        # [batch_size x num_nodes x embedding_dim]
         embedding_tensor = self.gcn_forward(
             x, adj, self.conv_first, self.conv_block, self.conv_last, embedding_mask
         )

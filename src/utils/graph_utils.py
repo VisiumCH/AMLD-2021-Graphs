@@ -152,7 +152,6 @@ def neighborhoods(adj, n_hops, use_cuda):
     hop_adj = power_adj = adj
     for i in range(n_hops - 1):
         power_adj = power_adj @ adj
-        prev_hop_adj = hop_adj
         hop_adj = hop_adj + power_adj
         hop_adj = (hop_adj > 0).float()
     return hop_adj.cpu().numpy().astype(int)

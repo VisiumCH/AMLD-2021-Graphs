@@ -2,28 +2,24 @@
 
      Main user interface for the explainer module.
 """
-import argparse
-import os
 import numpy as np
-
-import sklearn.metrics as metrics
+import os
+import shutil
 
 from tensorboardX import SummaryWriter
-
-import pickle
-import shutil
 import torch
 
-import configs_explainer
-
+import src.GNNexplainer.configs_explainer as configs_explainer
+from src.GNNexplainer.explainer import Explainer, train_explainer
 import src.GNNtrainer.models as models
 import src.utils.io_utils as io_utils
-from explainer import Explainer, train_explainer
 
 
 def main():
     # Load a configuration
     prog_args = configs_explainer.explainer_arg_parse()
+    print(prog_args)
+    print(type(prog_args))
 
     if prog_args.gpu:
         os.environ["CUDA_VISIBLE_DEVICES"] = prog_args.cuda
@@ -56,9 +52,6 @@ def main():
     print("Loaded model from {}".format(prog_args.ckptdir))
     print("input dim: ", input_dim, "; num classes: ", num_classes)
 
-    # build model
-    print("Method: ", prog_args.method)
-
     # Explain Graph prediction
     model = models.GcnEncoderGraph(
         input_dim=input_dim,
@@ -76,24 +69,25 @@ def main():
     model.load_state_dict(ckpt["model_state"])
     model = model.eval()
 
-    # Extract the data relative to the chosen graph.
+    # Info relative to all graphs in checkpoint.
     adj = cg_dict["adj"]
     feat = cg_dict["feat"]
     label = cg_dict["label"]
     pred = cg_dict["pred"]
 
     graph_idx = prog_args.graph_idx
-    sub_adj = adj[graph_idx]
-    sub_feat = feat[graph_idx, :]
-    sub_label = label[graph_idx]
-    neighbors = np.asarray(range(adj.shape[0]))
 
-    sub_adj = np.expand_dims(sub_adj, axis=0)
-    sub_feat = np.expand_dims(sub_feat, axis=0)
+    adj = adj[graph_idx]
+    feat = feat[graph_idx]
+    label = label[graph_idx]
+    pred = pred[:, graph_idx, :]
 
-    adj = torch.tensor(sub_adj, dtype=torch.float)
-    x = torch.tensor(sub_feat, requires_grad=True, dtype=torch.float)
-    label = torch.tensor(sub_label, dtype=torch.long)
+    adj = np.expand_dims(adj, axis=0)
+    feat = np.expand_dims(feat, axis=0)
+
+    adj = torch.tensor(adj, dtype=torch.float)
+    x = torch.tensor(feat, requires_grad=True, dtype=torch.float)
+    label = torch.tensor(label, dtype=torch.long)
 
     # Create explainer
     explainer = Explainer(
@@ -102,11 +96,10 @@ def main():
         x=x,
         label=label,
         args=prog_args,
-        writer=writer,
-        graph_idx=prog_args.graph_idx,
+        writer=writer
     )
 
-    # Run explainer.
+    # Train explainer.
     train_explainer(
         explainer=explainer, pred=pred, args=prog_args, graph_idx=prog_args.graph_idx
     )

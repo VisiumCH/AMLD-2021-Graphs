@@ -11,3 +11,10 @@ jupyter==1.0.0
 ipywidgets==7.5.1
 seaborn
 visions==0.4.4
+ogb
+torch-geometric
+scikit-learn
+outdated
+urllib3
+torch-sparse
+torch-scatter

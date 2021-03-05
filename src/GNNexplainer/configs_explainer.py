@@ -98,13 +98,15 @@ def explainer_arg_parse():
         "--multigraph-class",
         dest="multigraph_class",
         type=int,
-        help="whether to run Explainer on multiple Graphs from the Classification task for examples in the same class.",
+        help="""whether to run Explainer on multiple Graphs from the
+                Classification task for examples in the same class.""",
     )
     parser.add_argument(
         "--multinode-class",
         dest="multinode_class",
         type=int,
-        help="whether to run Explainer on multiple nodes from the Classification task for examples in the same class.",
+        help="""whether to run Explainer on multiple nodes from the Classification
+                task for examples in the same class.""",
     )
     parser.add_argument(
         "--align-steps",

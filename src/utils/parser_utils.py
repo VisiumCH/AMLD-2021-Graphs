@@ -2,7 +2,6 @@
 
     Parsing utilities.
 """
-import argparse
 
 
 def parse_optimizer(parser):

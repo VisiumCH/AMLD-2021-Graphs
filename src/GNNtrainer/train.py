@@ -1,17 +1,10 @@
-import argparse
 import os
-import pickle
 import random
-import shutil
 import time
 
 import matplotlib
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
 
-import networkx as nx
 import numpy as np
 import sklearn.metrics as metrics
 
@@ -25,7 +18,6 @@ import configs_trainer
 
 import src.utils.math_utils as math_utils
 import src.utils.io_utils as io_utils
-import src.utils.train_utils as train_utils
 import src.utils.featgen as featgen
 import src.utils.graph_utils as graph_utils
 
@@ -49,7 +41,7 @@ def prepare_data(graphs, args, test_graphs=None, max_nodes=0):
     else:
         train_idx = int(len(graphs) * args.train_ratio)
         train_graphs = graphs[:train_idx]
-        val_graphs = graph[train_idx:]
+        val_graphs = graphs[train_idx:]
     print(
         "Num training graphs: ",
         len(train_graphs),
@@ -131,7 +123,6 @@ def train(
     mask_nodes=True,
     device="cuda",
 ):
-    writer_batch_idx = [0, 3, 6, 9]
 
     optimizer = torch.optim.Adam(
         filter(lambda p: p.requires_grad, model.parameters()), lr=0.001
@@ -236,7 +227,7 @@ def train(
     plt.switch_backend("agg")
     plt.figure()
     plt.plot(train_epochs, math_utils.exp_moving_avg(train_accs, 0.85), "-", lw=1)
-    #### MODIFIED HERE (COMMENTED)
+    # MODIFIED HERE (COMMENTED)
     # if test_dataset is not None:
     #    plt.plot(best_val_epochs, best_val_accs, "bo", test_epochs, test_accs, "go")
     #    plt.legend(["train", "val", "test"])
@@ -299,30 +290,6 @@ def evaluate(
     }
     print(name, " accuracy:", result["acc"])
     return result
-
-
-def evaluate_node(ypred, labels, train_idx, test_idx):
-    _, pred_labels = torch.max(ypred, 2)
-    pred_labels = pred_labels.numpy()
-
-    pred_train = np.ravel(pred_labels[:, train_idx])
-    pred_test = np.ravel(pred_labels[:, test_idx])
-    labels_train = np.ravel(labels[:, train_idx])
-    labels_test = np.ravel(labels[:, test_idx])
-
-    result_train = {
-        "prec": metrics.precision_score(labels_train, pred_train, average="macro"),
-        "recall": metrics.recall_score(labels_train, pred_train, average="macro"),
-        "acc": metrics.accuracy_score(labels_train, pred_train),
-        "conf_mat": metrics.confusion_matrix(labels_train, pred_train),
-    }
-    result_test = {
-        "prec": metrics.precision_score(labels_test, pred_test, average="macro"),
-        "recall": metrics.recall_score(labels_test, pred_test, average="macro"),
-        "acc": metrics.accuracy_score(labels_test, pred_test),
-        "conf_mat": metrics.confusion_matrix(labels_test, pred_test),
-    }
-    return result_train, result_test
 
 
 #############################
@@ -405,64 +372,6 @@ def benchmark_task(args, writer=None, feat="node-label", device="cuda"):
         device=device,
     )
     evaluate(test_dataset, model, args, "Validation", device=device)
-
-
-def benchmark_task_val(args, writer=None, feat="node-label", device="cuda"):
-    all_vals = []
-    graphs = io_utils.read_graphfile(
-        args.datadir, args.bmname, max_nodes=args.max_nodes
-    )
-
-    if feat == "node-feat" and "feat_dim" in graphs[0].graph:
-        print("Using node features")
-        input_dim = graphs[0].graph["feat_dim"]
-    elif feat == "node-label" and "label" in graphs[0].nodes[0]:
-        print("Using node labels")
-        for G in graphs:
-            for u in G.nodes():
-                G.nodes[u]["feat"] = np.array(G.nodes[u]["label"])
-    else:
-        print("Using constant labels")
-        featgen_const = featgen.ConstFeatureGen(np.ones(args.input_dim, dtype=float))
-        for G in graphs:
-            featgen_const.gen_node_features(G)
-
-    # 10 splits
-    for i in range(10):
-        (
-            train_dataset,
-            val_dataset,
-            max_num_nodes,
-            input_dim,
-            assign_input_dim,
-        ) = cross_val.prepare_val_data(graphs, args, i, max_nodes=args.max_nodes)
-        print("Method: base")
-        model = models.GcnEncoderGraph(
-            input_dim,
-            args.hidden_dim,
-            args.output_dim,
-            args.num_classes,
-            args.num_gc_layers,
-            bn=args.bn,
-            dropout=args.dropout,
-            args=args,
-        ).to(device)
-
-        _, val_accs = train(
-            train_dataset,
-            model,
-            args,
-            val_dataset=val_dataset,
-            test_dataset=None,
-            writer=writer,
-            device=device,
-        )
-        all_vals.append(np.array(val_accs))
-    all_vals = np.vstack(all_vals)
-    all_vals = np.mean(all_vals, axis=0)
-    print(all_vals)
-    print(np.max(all_vals))
-    print(np.argmax(all_vals))
 
 
 def main():

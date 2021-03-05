@@ -1,39 +1,15 @@
 import math
-import time
-import os
-
-import matplotlib
-import matplotlib.colors as colors
 import matplotlib.pyplot as plt
-from matplotlib.backends.backend_agg import FigureCanvasAgg as FigureCanvas
-from matplotlib.figure import Figure
-
-import networkx as nx
 import numpy as np
-import pandas as pd
-import seaborn as sns
-import tensorboardX.utils
+import os
+import time
 
+import tensorboardX.utils
 import torch
 import torch.nn as nn
-from torch.autograd import Variable
-
-import sklearn.metrics as metrics
-from sklearn.metrics import (
-    roc_auc_score,
-    recall_score,
-    precision_score,
-    roc_auc_score,
-    precision_recall_curve,
-)
-from sklearn.cluster import DBSCAN
-
-import pdb
 
 import src.utils.io_utils as io_utils
-import src.utils.parser_utils as parser_utils
 import src.utils.train_utils as train_utils
-import src.utils.graph_utils as graph_utils
 
 
 use_cuda = torch.cuda.is_available()
@@ -46,112 +22,71 @@ def train_explainer(
     explainer,
     pred,
     args,
-    print_training=True,
-    graph_idx=0,
-    method="exp",
+    graph_idx=0
 ):
-    graph_mode = True
-
-    pred_label = np.argmax(pred[0][graph_idx], axis=0)
+    pred_label = np.argmax(pred[0], axis=0)
     print("Graph predicted label: ", pred_label)
 
     if args.gpu:
         explainer = explainer.cuda()
 
-    # gradient baseline
-    if method == "grad":
+    # Set Explainer class in train mode.
+    explainer.train()
+
+    # Initialize logger for images in tensorboard.
+    logger = ExplainerLogger(explainer)
+    begin_time = time.time()
+
+    # Start training.
+    for epoch in range(args.num_epochs):
         explainer.zero_grad()
-        # pdb.set_trace()
-        adj_grad = torch.abs(explainer.adj_feat_grad(pred_label)[0])[graph_idx]
-        masked_adj = adj_grad + adj_grad.t()
-        masked_adj = nn.functional.sigmoid(masked_adj)
-        masked_adj = masked_adj.cpu().detach().numpy() * sub_adj.squeeze()
-    else:
-        explainer.train()
-        # Initialize logger for images in tensorboard.
-        logger = ExplainerLogger(explainer)
-        begin_time = time.time()
-        for epoch in range(args.num_epochs):
-            explainer.zero_grad()
-            explainer.optimizer.zero_grad()
-            ypred, adj_atts = explainer()  # Equivalent to using forward.
-            loss = explainer.loss(ypred, epoch)
-            loss.backward()
+        explainer.optimizer.zero_grad()
 
-            explainer.optimizer.step()
-            if explainer.scheduler is not None:
-                explainer.scheduler.step()
+        ypred, adj_atts = explainer()
+        loss = explainer.loss(ypred, epoch)
+        loss.backward()
+        explainer.optimizer.step()
 
-            mask_density = explainer.mask_density()
-            if print_training:
-                print(
-                    "epoch: ",
-                    epoch,
-                    "; loss: ",
-                    loss.item(),
-                    "; mask density: ",
-                    mask_density.item(),
-                    "; pred: ",
-                    ypred,
-                )
-            single_subgraph_label = explainer.label
+        if explainer.scheduler is not None:
+            explainer.scheduler.step()
 
-            if explainer.writer is not None:
-                explainer.writer.add_scalar("mask/density", mask_density, epoch)
-                explainer.writer.add_scalar(
-                    "optimization/lr",
-                    explainer.optimizer.param_groups[0]["lr"],
-                    epoch,
-                )
-                if epoch % 25 == 0:
-                    logger.log_mask(epoch)
-                    #### MODIFIED HERE (COMMENTED)
-                    # logger.log_masked_adj(epoch, label=single_subgraph_label
-                    # )
+        mask_density = explainer.mask_density()
 
-                    #### MODIFIED HERE (COMMENTED)
-                    # logger.log_adj_grad(pred_label, epoch, label=single_subgraph_label
-                    # )
+        print("epoch: ",
+              epoch,
+              "; loss: ",
+              loss.item(),
+              "; mask density: ",
+              mask_density.item(),
+              "; pred: ",
+              ypred,
+              )
 
-                if epoch == 0:
-                    if explainer.model.att:
-                        # explain node
-                        print("adj att size: ", adj_atts.size())
-                        adj_att = torch.sum(adj_atts[0], dim=2)
-                        # adj_att = adj_att[neighbors][:, neighbors]
-                        node_adj_att = adj_att * adj.float().cuda()
-                        io_utils.log_matrix(
-                            explainer.writer, node_adj_att[0], "att/matrix", epoch
-                        )
-                        node_adj_att = node_adj_att[0].cpu().detach().numpy()
-                        G = io_utils.denoise_graph(
-                            node_adj_att,
-                            threshold=3.8,  # threshold_num=20,
-                            max_component=True,
-                        )
-                        io_utils.log_graph(
-                            explainer.writer,
-                            G,
-                            name="att/graph",
-                            identify_self=not graph_mode,
-                            nodecolor="label",
-                            edge_vmax=None,
-                            args=args,
-                        )
-            if method != "exp":
-                break
-
-        print("finished training in ", time.time() - begin_time)
-        if method == "exp":
-            masked_adj = (
-                explainer.masked_adj[0].cpu().detach().numpy()
-                * explainer.adj.numpy().squeeze()
+        if explainer.writer is not None:
+            explainer.writer.add_scalar("mask/density", mask_density, epoch)
+            explainer.writer.add_scalar(
+                "optimization/lr",
+                explainer.optimizer.param_groups[0]["lr"],
+                epoch,
             )
-        else:
-            adj_atts = nn.functional.sigmoid(adj_atts).squeeze()
-            masked_adj = (
-                adj_atts.cpu().detach().numpy() * explainer.adj().numpy().squeeze()
-            )
+            if epoch % 25 == 0:
+                logger.log_mask(epoch)
+                # MODIFIED HERE (COMMENTED)
+                # logger.log_masked_adj(epoch, label=single_subgraph_label
+                # )
+
+                # MODIFIED HERE (COMMENTED)
+                # logger.log_adj_grad(pred_label, epoch, label=single_subgraph_label
+                # )
+
+    print("finished training in ", time.time() - begin_time)
+
+    masked_adj = (
+        explainer.masked_adj[0].cpu().detach().numpy()
+        * explainer.adj.numpy().squeeze()
+    )
+    # I THINK THE FOLLOWING SHOULD BE ENOUGH< CHECK THIS AT SOME POINT
+    masked_adj = explainer.masked_adj[0].cpu().detach().numpy()
 
     # Save explanations to file.
     fname = (
@@ -181,19 +116,17 @@ def train_explainer(
 
 class Explainer(nn.Module):
     def __init__(
-        self, adj, x, model, label, args, graph_idx=0, writer=None, use_sigmoid=True
+        self, adj, x, model, label, args, writer=None, use_sigmoid=True
     ):
         super(Explainer, self).__init__()
         self.adj = adj
         self.x = x
         self.model = model
         self.label = label
-        self.graph_idx = graph_idx
         self.args = args
         self.writer = writer
         self.mask_act = args.mask_act
         self.use_sigmoid = use_sigmoid
-        self.graph_mode = True
         # Relative weights for the terms in the loss function.
         self.coeffs = {
             "size": 0.005,
@@ -342,7 +275,7 @@ class Explainer(nn.Module):
             self.writer.add_scalar("optimization/feat_size_loss", feat_size_loss, epoch)
             self.writer.add_scalar("optimization/mask_ent_loss", mask_ent_loss, epoch)
             self.writer.add_scalar(
-                "optimization/feat_mask_ent_loss", mask_ent_loss, epoch
+                "optimization/feat_mask_ent_loss", feat_mask_ent_loss, epoch
             )
             self.writer.add_scalar("optimization/pred_loss", pred_loss, epoch)
             # self.writer.add_scalar("optimization/lap_loss", lap_loss, epoch)
@@ -387,7 +320,6 @@ class ExplainerLogger:
         if self.explainer.args.gpu:
             adj = self.explainer.adj.cuda()
             x = self.explainer.x.cuda()
-            label = self.explainer.label.cuda()
         else:
             x, adj = self.explainer.x, self.adj
         ypred, _ = self.explainer.model(x, adj)
@@ -419,7 +351,7 @@ class ExplainerLogger:
                 epoch,
             )
 
-        masked_adj = self.expplainer.masked_adj[0].cpu().detach().numpy()
+        masked_adj = self.explainer.masked_adj[0].cpu().detach().numpy()
 
         # Denoise graph since many node neighborhoods for such tasks are relatively large for
         # visualization

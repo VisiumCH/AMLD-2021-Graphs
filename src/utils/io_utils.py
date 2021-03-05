@@ -5,31 +5,20 @@
 import os
 import statistics
 import re
-import csv
 
 import numpy as np
-import pandas as pd
-import scipy as sc
+import pickle
 
 
 import matplotlib
 import matplotlib.pyplot as plt
 
-import numpy as np
 import torch
 import networkx as nx
 import tensorboardX
 
 import cv2
-
-import torch
-import torch.nn as nn
 from torch.autograd import Variable
-
-# Only necessary to rebuild the Chemistry example
-# from rdkit import Chem
-
-import src.utils.featgen as featgen
 
 use_cuda = torch.cuda.is_available()
 
@@ -250,7 +239,6 @@ def denoise_graph(
     return G
 
 
-# TODO: unify log_graph and log_graph2
 def log_graph(
     writer,
     Gc,
@@ -325,7 +313,6 @@ def log_graph(
     pos_layout = nx.kamada_kawai_layout(Gc, weight=None)
     # pos_layout = nx.spring_layout(Gc, weight=None)
 
-    weights = [d for (u, v, d) in Gc.edges(data="weight", default=1)]
     if edge_vmax is None:
         edge_vmax = statistics.median_high(
             [d for (u, v, d) in Gc.edges(data="weight", default=1)]
@@ -394,8 +381,8 @@ def plot_cmap(cmap, ncolor):
         ax = fig.add_subplot(111)
         ax.pcolor(np.linspace(1, ncolor, ncolor).reshape(1, ncolor), cmap=cm)
         ax.set_title(name)
-        xt = ax.set_xticks([])
-        yt = ax.set_yticks([])
+        ax.set_xticks([])
+        ax.set_yticks([])
     return fig
 
 
@@ -457,13 +444,13 @@ def read_graphfile(datadir, dataname, max_nodes=None, edge_labels=False):
         with open(filename_nodes) as f:
             for line in f:
                 line = line.strip("\n")
-                l = int(line)
-                node_labels += [l]
-                if min_label_val is None or min_label_val > l:
-                    min_label_val = l
+                label = int(line)
+                node_labels += [label]
+                if min_label_val is None or min_label_val > label:
+                    min_label_val = label
         # assume that node labels are consecutive
         num_unique_node_labels = max(node_labels) - min_label_val + 1
-        node_labels = [l - min_label_val for l in node_labels]
+        node_labels = [label - min_label_val for label in node_labels]
     except IOError:
         print("No node labels")
 
@@ -480,7 +467,6 @@ def read_graphfile(datadir, dataname, max_nodes=None, edge_labels=False):
     except IOError:
         print("No node attributes")
 
-    label_has_zero = False
     filename_graphs = prefix + "_graph_labels.txt"
     graph_labels = []
 
@@ -494,7 +480,7 @@ def read_graphfile(datadir, dataname, max_nodes=None, edge_labels=False):
             graph_labels.append(val)
 
     label_map_to_int = {val: i for i, val in enumerate(label_vals)}
-    graph_labels = np.array([label_map_to_int[l] for l in graph_labels])
+    graph_labels = np.array([label_map_to_int[label] for label in graph_labels])
 
     if edge_labels:
         # For Tox21_AHR we want to know edge labels
@@ -509,8 +495,6 @@ def read_graphfile(datadir, dataname, max_nodes=None, edge_labels=False):
                 if val not in edge_label_vals:
                     edge_label_vals.append(val)
                 edge_labels.append(val)
-
-        edge_label_map_to_int = {val: i for i, val in enumerate(edge_label_vals)}
 
     filename_adj = prefix + "_A.txt"
     adj_list = {i: [] for i in range(1, len(graph_labels) + 1)}
@@ -571,106 +555,6 @@ def read_graphfile(datadir, dataname, max_nodes=None, edge_labels=False):
     return graphs
 
 
-def read_biosnap(datadir, edgelist_file, label_file, feat_file=None, concat=True):
-    """Read data from BioSnap
-
-    Returns:
-        List of networkx objects with graph and node labels
-    """
-    G = nx.Graph()
-    delimiter = "\t" if "tsv" in edgelist_file else ","
-    print(delimiter)
-    df = pd.read_csv(
-        os.path.join(datadir, edgelist_file), delimiter=delimiter, header=None
-    )
-    data = list(map(tuple, df.values.tolist()))
-    G.add_edges_from(data)
-    print("Total nodes: ", G.number_of_nodes())
-
-    G = max(nx.connected_component_subgraphs(G), key=len)
-    print("Total nodes in largest connected component: ", G.number_of_nodes())
-
-    df = pd.read_csv(os.path.join(datadir, label_file), delimiter="\t", usecols=[0, 1])
-    data = list(map(tuple, df.values.tolist()))
-
-    missing_node = 0
-    for line in data:
-        if int(line[0]) not in G:
-            missing_node += 1
-        else:
-            G.nodes[int(line[0])]["label"] = int(line[1] == "Essential")
-
-    print("missing node: ", missing_node)
-
-    missing_label = 0
-    remove_nodes = []
-    for u in G.nodes():
-        if "label" not in G.nodes[u]:
-            missing_label += 1
-            remove_nodes.append(u)
-    G.remove_nodes_from(remove_nodes)
-    print("missing_label: ", missing_label)
-
-    if feat_file is None:
-        feature_generator = featgen.ConstFeatureGen(np.ones(10, dtype=float))
-        feature_generator.gen_node_features(G)
-    else:
-        df = pd.read_csv(os.path.join(datadir, feat_file), delimiter=",")
-        data = np.array(df.values)
-        print("Feat shape: ", data.shape)
-
-        for row in data:
-            if int(row[0]) in G:
-                if concat:
-                    node = int(row[0])
-                    onehot = np.zeros(10)
-                    onehot[min(G.degree[node], 10) - 1] = 1.0
-                    G.nodes[node]["feat"] = np.hstack(
-                        (np.log(row[1:] + 0.1), [1.0], onehot)
-                    )
-                else:
-                    G.nodes[int(row[0])]["feat"] = np.log(row[1:] + 0.1)
-
-        missing_feat = 0
-        remove_nodes = []
-        for u in G.nodes():
-            if "feat" not in G.nodes[u]:
-                missing_feat += 1
-                remove_nodes.append(u)
-        G.remove_nodes_from(remove_nodes)
-        print("missing feat: ", missing_feat)
-
-    return G
-
-
-def build_aromaticity_dataset():
-    filename = "data/tox21_10k_data_all.sdf"
-    basename = filename.split(".")[0]
-    collector = []
-    sdprovider = Chem.SDMolSupplier(filename)
-    for i, mol in enumerate(sdprovider):
-        try:
-            moldict = {}
-            moldict["smiles"] = Chem.MolToSmiles(mol)
-            # Parse Data
-            for propname in mol.GetPropNames():
-                moldict[propname] = mol.GetProp(propname)
-            nb_bonds = len(mol.GetBonds())
-            is_aromatic = False
-            aromatic_bonds = []
-            for j in range(nb_bonds):
-                if mol.GetBondWithIdx(j).GetIsAromatic():
-                    aromatic_bonds.append(j)
-                    is_aromatic = True
-            moldict["aromaticity"] = is_aromatic
-            moldict["aromatic_bonds"] = aromatic_bonds
-            collector.append(moldict)
-        except:
-            print("Molecule %s failed" % i)
-    data = pd.DataFrame(collector)
-    data.to_csv(basename + "_pandas.csv")
-
-
 def gen_train_plt_name(args):
     return "results/" + gen_prefix(args) + ".png"
 
@@ -693,89 +577,3 @@ def log_assignment(assign_tensor, writer, epoch, batch_idx):
     data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
     data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
     writer.add_image("assignment", data, epoch)
-
-
-# TODO: unify log_graph and log_graph2
-def log_graph2(adj, batch_num_nodes, writer, epoch, batch_idx, assign_tensor=None):
-    plt.switch_backend("agg")
-    fig = plt.figure(figsize=(8, 6), dpi=300)
-
-    for i in range(len(batch_idx)):
-        ax = plt.subplot(2, 2, i + 1)
-        num_nodes = batch_num_nodes[batch_idx[i]]
-        adj_matrix = adj[batch_idx[i], :num_nodes, :num_nodes].cpu().data.numpy()
-        G = nx.from_numpy_matrix(adj_matrix)
-        nx.draw(
-            G,
-            pos=nx.spring_layout(G),
-            with_labels=True,
-            node_color="#336699",
-            edge_color="grey",
-            width=0.5,
-            node_size=300,
-            alpha=0.7,
-        )
-        ax.xaxis.set_visible(False)
-
-    plt.tight_layout()
-    fig.canvas.draw()
-
-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    writer.add_image("graphs", data, epoch)
-
-    # log a label-less version
-    # fig = plt.figure(figsize=(8,6), dpi=300)
-    # for i in range(len(batch_idx)):
-    #    ax = plt.subplot(2, 2, i+1)
-    #    num_nodes = batch_num_nodes[batch_idx[i]]
-    #    adj_matrix = adj[batch_idx[i], :num_nodes, :num_nodes].cpu().data.numpy()
-    #    G = nx.from_numpy_matrix(adj_matrix)
-    #    nx.draw(G, pos=nx.spring_layout(G), with_labels=False, node_color='#336699',
-    #            edge_color='grey', width=0.5, node_size=25,
-    #            alpha=0.8)
-
-    # plt.tight_layout()
-    # fig.canvas.draw()
-
-    # data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep='')
-    # data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    # writer.add_image('graphs_no_label', data, epoch)
-
-    # colored according to assignment
-    assignment = assign_tensor.cpu().data.numpy()
-    fig = plt.figure(figsize=(8, 6), dpi=300)
-
-    num_clusters = assignment.shape[2]
-    all_colors = np.array(range(num_clusters))
-
-    for i in range(len(batch_idx)):
-        ax = plt.subplot(2, 2, i + 1)
-        num_nodes = batch_num_nodes[batch_idx[i]]
-        adj_matrix = adj[batch_idx[i], :num_nodes, :num_nodes].cpu().data.numpy()
-
-        label = np.argmax(assignment[batch_idx[i]], axis=1).astype(int)
-        label = label[: batch_num_nodes[batch_idx[i]]]
-        node_colors = all_colors[label]
-
-        G = nx.from_numpy_matrix(adj_matrix)
-        nx.draw(
-            G,
-            pos=nx.spring_layout(G),
-            with_labels=False,
-            node_color=node_colors,
-            edge_color="grey",
-            width=0.4,
-            node_size=50,
-            cmap=plt.get_cmap("Set1"),
-            vmin=0,
-            vmax=num_clusters - 1,
-            alpha=0.8,
-        )
-
-    plt.tight_layout()
-    fig.canvas.draw()
-
-    data = np.fromstring(fig.canvas.tostring_rgb(), dtype=np.uint8, sep="")
-    data = data.reshape(fig.canvas.get_width_height()[::-1] + (3,))
-    writer.add_image("graphs_colored", data, epoch)

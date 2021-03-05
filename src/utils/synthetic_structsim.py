@@ -117,7 +117,7 @@ def tree(start, height, r=2, role_start=0):
     INPUT:
     -------------
     start       :    starting index for the shape
-    height      :    int height of the tree 
+    height      :    int height of the tree
     r           :    int number of branches per node 
     role_start  :    starting index for the roles
     OUTPUT:
