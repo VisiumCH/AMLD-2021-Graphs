@@ -153,7 +153,7 @@ def train(
                 all_adjs = prev_adjs
                 all_feats = prev_feats
                 all_labels = prev_labels
-            elif batch_idx < 20:
+            else:
                 prev_adjs = data["adj"]
                 prev_feats = data["feats"]
                 prev_labels = data["label"]
@@ -169,8 +169,8 @@ def train(
             ).to(device)
 
             ypred, att_adj = model(h0, adj, batch_num_nodes, assign_x=assign_input)
-            if batch_idx < 5:
-                predictions += ypred.cpu().detach().numpy().tolist()
+
+            predictions += ypred.cpu().detach().numpy().tolist()
 
             if not args.method == "soft-assign" or not args.linkpred:
                 loss = model.loss(ypred, label)
