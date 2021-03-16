@@ -8,7 +8,7 @@ import pandas as pd
 elements = pd.read_csv("/io/data/external/elementlist.csv", index_col=0)
 
 
-def plot_mol(torch_graph):
+def plot_mol(torch_graph, layout: str=None):
     fig, ax = plt.subplots(dpi=120)
 
     G = to_networkx(
@@ -16,7 +16,10 @@ def plot_mol(torch_graph):
         to_undirected=True
     )
 
-    pos = nx.kamada_kawai_layout(G)
+    if layout in (None, "kamada_kawai"):
+        pos = nx.kamada_kawai_layout(G)
+    elif layout == "spring":
+        pos = nx.spring_layout(G)
 
     atoms = torch_graph.x[:, 0]
     # single_bonds = where(torch_graph.edge_attr[:, 0] == 0)[0]
@@ -33,7 +36,6 @@ def plot_mol(torch_graph):
         with_labels=False,
         edgelist=torch_graph.edge_index[:, not_aromatic].T.tolist(),
         width=torch_graph.edge_attr[:, 0] + 1,
-
     )
 
     # AROMATIC bonds -> DASHED
