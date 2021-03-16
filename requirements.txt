@@ -20,3 +20,4 @@ torch-spline-conv==1.2.1
 torch-geometric==1.6.3
 ogb==1.3.0
 ipywidgets==7.6.3
+tqdm==4.59.0
