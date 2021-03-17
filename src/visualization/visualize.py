@@ -5,8 +5,10 @@ import matplotlib.pyplot as plt
 from torch import where
 
 import pandas as pd
-elements = pd.read_csv("/io/data/external/elementlist.csv", index_col=0)
 
+# Periodic table thanks to Chris Andrejewski <christopher.andrejewski@gmail.com>
+link = "https://raw.githubusercontent.com/andrejewski/periodic-table/master/data.csv"
+elements = pd.read_csv(link, index_col=0, sep=", ", engine="python")
 
 def plot_mol(torch_graph, layout: str=None):
     fig, ax = plt.subplots(dpi=120)
@@ -32,7 +34,7 @@ def plot_mol(torch_graph, layout: str=None):
         G, pos,
         node_color=atoms,  # color coded by atomic number
         cmap="prism",
-        node_size=10 * atoms,    # size give by atomic number
+        node_size= 10 * atoms,    # size give by atomic number
         with_labels=False,
         edgelist=torch_graph.edge_index[:, not_aromatic].T.tolist(),
         width=torch_graph.edge_attr[:, 0] + 1,
@@ -55,8 +57,7 @@ def plot_mol(torch_graph, layout: str=None):
             for node, p in pos.items()
         },
         labels={
-            i: elements.iloc[torch_graph.x[i, 0].item()].symbol
-            for i in range(torch_graph.num_nodes)
+            i: symbol for i, symbol in enumerate(elements.loc[atoms, "symbol"])
         },
     )
 
