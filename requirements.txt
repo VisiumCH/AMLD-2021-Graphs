@@ -12,7 +12,7 @@ coverage            # MIT
 flake8              # MIT
 python-dotenv       # BSD-3-Clause
 ipykernel==5.5.0
-torch == 1.8.0
+torch==1.8.0
 torch-scatter==2.0.6
 torch-sparse ==0.6.9
 torch-cluster==1.5.9
