@@ -33,10 +33,14 @@ def plot_mol(torch_graph, layout: str = None):
 
     nx.draw_networkx(
         G, pos,
-        node_color=atoms,  # color coded by atomic number
-        cmap="prism",
-        node_size=10 * atoms,    # size give by atomic number
-        with_labels=False,
+        node_color="white",
+        # node_color=atoms,  # color coded by atomic number
+        # cmap="prism",
+        # node_size=10 * atoms,    # size give by atomic number
+        labels={
+            i: symbol for i, symbol in enumerate(elements.loc[atoms + 1, "symbol"])
+        },
+        with_labels=True,
         edgelist=torch_graph.edge_index[:, not_aromatic].T.tolist(),
         width=torch_graph.edge_attr[:, 0] + 1,
     )
@@ -50,17 +54,17 @@ def plot_mol(torch_graph, layout: str = None):
     )
 
     # Add element symbols
-    offset = 0.05
-    nx.draw_networkx_labels(
-        G,
-        pos={
-            node: (p[0] - offset, p[1] + 1.5 * offset)
-            for node, p in pos.items()
-        },
-        labels={
-            i: symbol for i, symbol in enumerate(elements.loc[atoms, "symbol"])
-        },
-    )
+    # offset = 0.05
+    # nx.draw_networkx_labels(
+    #     G,
+    #     pos={
+    #         node: (p[0] - offset, p[1] + 1.5 * offset)
+    #         for node, p in pos.items()
+    #     },
+    #     labels={
+    #         i: symbol for i, symbol in enumerate(elements.loc[atoms, "symbol"])
+    #     },
+    # )
 
     fig.tight_layout()
     plt.show()
