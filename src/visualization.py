@@ -28,7 +28,7 @@ def ogb_graph_to_mol(torch_graph):
 def plot_torch_as_mol(
     torch_graph,
     layout: str = None,
-    edge_mask = None
+    edge_mask=None
 ):
     G, node_labels = ogb_graph_to_mol(torch_graph)
 
