@@ -53,6 +53,10 @@ coverage.xml
 # Django stuff:
 *.log
 
+# Logs
+ml-runs
+notebooks/ml-runs
+
 # Sphinx documentation
 docs/_build/
 
