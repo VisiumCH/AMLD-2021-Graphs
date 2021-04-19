@@ -120,7 +120,7 @@ def plot_mol(
 def mask_to_dict(edge_mask, data):
     """
     Conver an `edge_mask` in pytorch geometric format to a networkx compatible
-    dictionary (_{(n1, n2) : mask_value}_).
+    dictionary (`{(n1, n2) : mask_value}`).
     Multiple edge appearences are averaged.
     """
     edge_mask_dict = defaultdict(float)
@@ -140,6 +140,16 @@ def mask_to_dict(edge_mask, data):
 
 
 def plot_expl(data, GNNExp_edge_mask, **kwargs):
+    """Draw a molecule (pytorch geom. Data) with an edge mask from GNN Explainer.
+    Wrapper of `plot_mol`.
+
+    Parameters
+    ----------
+    data : Data
+        Molecule of interest
+    GNNExp_edge_mask : torch.Tensor
+        Edge mask computed by GNNExplainer.
+    """
     mol = to_molecule(data)
 
     GNNExp_edge_mask_dict = mask_to_dict(

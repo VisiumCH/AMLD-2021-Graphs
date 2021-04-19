@@ -22,6 +22,23 @@ def explain_graph_visualized(
     data: Data,
     device: torch.device = None
 ):
+    """Visualize the GNNExlainer explanation of a trained model for the input data.
+    Returns an interactive widget with a threshold slider.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Trained GNN model
+    data : Data
+        Query datapoint
+    device : torch.device, optional
+        Torch device, by default None
+
+    Returns
+    -------
+    interact
+        Interactive widget
+    """
     data.to(device)
     # x = data.x
     # edge_index = data.edge_index
@@ -89,6 +106,22 @@ def make_interactive_explainer(
     dataset_te,
     device: torch.device = None
 ):
+    """Create an interactive widget over a test dataset to query for single explanation.
+
+    Parameters
+    ----------
+    model : torch.nn.Module
+        Trained GNN Model
+    dataset_te : pytorch_geometric.Dataset
+        Test dataset
+    device : torch.device, optional
+        Torch device, by default None
+
+    Returns
+    -------
+    interact
+        Interactive widget
+    """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
 
@@ -131,7 +164,7 @@ def make_interactive_explainer(
         )
 
         return interact(
-            lambda data: explain_graph_visualized(data),
+            lambda data: explain_graph_visualized(model, data, device),
             data=[graph for i, graph in enumerate(list(single_loader_te)) if i in idces],
         )
 
