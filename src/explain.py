@@ -16,15 +16,16 @@ class GNNExplainer(torch.nn.Module):
     structures and small subsets node features that play a crucial role in a
     GNN’s graph-prediction.
     """
-
-    coeffs = {
-        'edge_size': 0.1,
-        'node_feat_size': 1.0,
-        'edge_ent': 1.0,
-        'node_feat_ent': 0.1,
-    }
-
-    def __init__(self, model, epochs=100, lr=0.01, log=True):
+    def __init__(
+        self,
+        model,
+        epochs=100,
+        lr=0.01,
+        edge_size=0.005,
+        edge_ent=1.0,
+        node_feat_size=0.07,
+        node_feat_ent=0.1,
+    ):
         """ Initialize GNNExplainer Class.
 
         Args:
@@ -38,7 +39,12 @@ class GNNExplainer(torch.nn.Module):
         self.model = model
         self.epochs = epochs
         self.lr = lr
-        self.log = log
+        self.coeffs = dict(
+            edge_size=edge_size,
+            node_feat_size=node_feat_size,
+            edge_ent=edge_ent,
+            node_feat_ent=node_feat_ent,
+        )
 
     def __set_masks__(self, x, edge_index):
         """ Initialize the masks for edges and node features.
@@ -136,16 +142,6 @@ class GNNExplainer(torch.nn.Module):
 
         return loss.sum()
 
-        """
-        Args:
-            edge_index (LongTensor): The edge indices.
-            batch_index (LongTensor): The batch index.
-            expl_label (int): Label against which compute cross entropy
-
-            **kwargs (optional): Additional arguments passed to the GNN module.
-
-        Returns:
-        """
     def explain_graph(
         self, x, edge_index, batch_index, expl_label: int, **kwargs
     ) -> (torch.nn.Parameter, torch.nn.Parameter):

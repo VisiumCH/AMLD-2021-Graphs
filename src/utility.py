@@ -20,6 +20,7 @@ from torch.nn.functional import one_hot
 def explain_graph_visualized(
     model: torch.nn.Module,
     data: Data,
+    explainer_kwargs={},
     device: torch.device = None
 ):
     """Visualize the GNNExlainer explanation of a trained model for the input data.
@@ -31,6 +32,9 @@ def explain_graph_visualized(
         Trained GNN model
     data : Data
         Query datapoint
+    explainer_kwargs : dict
+        Keyword argumets for `GNNExplainer` constructor, by default empty (uses
+        constructor defaults).
     device : torch.device, optional
         Torch device, by default None
 
@@ -39,13 +43,16 @@ def explain_graph_visualized(
     interact
         Interactive widget
     """
+    if device is None:
+        device = "cuda" if torch.cuda.is_available() else "cpu"
+
     data.to(device)
     # x = data.x
     # edge_index = data.edge_index
     model.eval()
 
     # Initialize explainer
-    explainer = GNNExplainer(model, epochs=200).to(device)
+    explainer = GNNExplainer(model, **explainer_kwargs).to(device)
     # Train explainer
     model_args = (data.x, data.edge_index, data.batch)
     GNNExp_feat_mask, GNNExp_edge_mask = explainer.explain_graph(
@@ -97,13 +104,14 @@ def explain_graph_visualized(
 
     return interact(
         threshold_plot,
-        threshold=FloatSlider(value=0.1, min=0., max=.99, step=0.05)
+        threshold=FloatSlider(value=0.4, min=0., max=.99, step=0.05)
     )
 
 
 def make_interactive_explainer(
     model: torch.nn.Module,
     dataset_te,
+    explainer_kwargs={},
     device: torch.device = None
 ):
     """Create an interactive widget over a test dataset to query for single explanation.
@@ -114,6 +122,9 @@ def make_interactive_explainer(
         Trained GNN Model
     dataset_te : pytorch_geometric.Dataset
         Test dataset
+    explainer_kwargs : dict
+        Keyword argumets for `GNNExplainer` constructor, by default empty (uses
+        constructor defaults).
     device : torch.device, optional
         Torch device, by default None
 
@@ -135,7 +146,7 @@ def make_interactive_explainer(
     y_pred = model(test_batch.x, test_batch.edge_index, test_batch.batch).argmax(dim=1)
     y_true = test_batch.y
 
-    def big_interact(which):
+    def data_selector(which):
         idces = []
         test_size = len(y_true)
         if which == "true_pos":
@@ -164,12 +175,14 @@ def make_interactive_explainer(
         )
 
         return interact(
-            lambda data: explain_graph_visualized(model, data, device),
+            lambda data: explain_graph_visualized(
+                model, data, explainer_kwargs=explainer_kwargs, device=device
+            ),
             data=[graph for i, graph in enumerate(list(single_loader_te)) if i in idces],
         )
 
     return interact(
-        big_interact,
+        data_selector,
         which=["true_pos", "true_neg", "false_pos", "false_neg"]
     )
 
