@@ -1,7 +1,7 @@
 from .explain import GNNExplainer
-from .visualization import plot_expl
+from .visualization import plot_mol
 
-from iPython.core import display
+from IPython.display import display
 from ipywidgets import interact, FloatSlider
 
 import matplotlib.pyplot as plt
@@ -62,9 +62,9 @@ def explain_graph_visualized(
 
     fig.tight_layout()
 
-    plot_expl(
+    plot_mol(
         data,
-        GNNExp_edge_mask,
+        edge_mask=GNNExp_edge_mask,
         edge_type=(data.edge_attr.argmax(dim=1) + 1).to("cpu").numpy(),
         ax=ax[1]
     )
@@ -81,9 +81,9 @@ def explain_graph_visualized(
         ax[0].clear()
         ax[0].set_xlim(xlim), ax[0].set_ylim(ylim)
 
-        plot_expl(
+        plot_mol(
             data,
-            GNNExp_edge_mask,
+            edge_mask=GNNExp_edge_mask,
             edge_type=(data.edge_attr.argmax(dim=1) + 1).to("cpu").numpy(),
             threshold=threshold,
             ax=ax[0]
