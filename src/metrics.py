@@ -1,9 +1,11 @@
-from matplotlib import rc
+import matplotlib
 import matplotlib.pyplot as plt
 
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 import torch
+
+from torch_geometric.data import DataLoader
 
 ################################################################################
 # METRICS
@@ -11,7 +13,7 @@ import torch
 
 def compute_accuracy(
     model: torch.nn.Module,
-    loader: torch.data.DataLoader,
+    loader: DataLoader,
     device=None
 ):
     """Compute accuracy of input model over all samples from the loader.
@@ -20,7 +22,7 @@ def compute_accuracy(
     ----------
     model : torch.nn.Module
         NN model
-    loader : torch.data.DataLoader
+    loader : DataLoader
         Data loader to evaluate on
     device : torch.device, optional
         Device to use, by default None.
@@ -63,7 +65,7 @@ def plot_cm(cm, display_labels=["Mutag", "Non Mutag"]):
     """
     # Set fontsize for plots
     font = {"size": 20}
-    rc("font", **font)
+    matplotlib.rc("font", **font)
 
     # Plot confusion matrix
     f, axes = plt.subplots(1, 1, figsize=(7, 7), sharey="row")
@@ -73,6 +75,9 @@ def plot_cm(cm, display_labels=["Mutag", "Non Mutag"]):
     disp.ax_.set_xlabel("Predicted label", fontsize=20)
     disp.ax_.set_ylabel("True label", fontsize=20)
 
+    plt.show()
+    matplotlib.rcParams.update(matplotlib.rcParamsDefault)
+
 
 def compute_cm(model, loader_test, device=None):
     """Compute confusion matrix of input model over all samples from the loader.
@@ -81,7 +86,7 @@ def compute_cm(model, loader_test, device=None):
     ----------
     model : torch.nn.Module
         NN model
-    loader_test : torch.data.DataLoader
+    loader_test : DataLoader
         Data loader
     device : torch.device, optional
         Device to use, by default None.
