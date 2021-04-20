@@ -81,18 +81,36 @@ class GNNExplainer(torch.nn.Module):
 
     def graph_loss(
         self,
-        x: torch.tensor,
-        edge_index: torch.tensor,
-        batch_index: torch.tensor,
+        x: torch.Tensor,
+        edge_index: torch.LongTensor,
+        batch_index: torch.LongTensor,
         expl_label: int,
         **kwargs
-    ) -> torch.tensor:
+    ) -> torch.Tensor:
         """Computes the explainer loss function for explanation
         of graph classificaiton tasks.
 
-        Returns:
-            loss (torch.tensor): explainer loss function, which
-                is a weight sum of different terms.
+        Parameters
+        ----------
+        x : torch.Tensor
+            Feature matrix of datapoint to explain.
+        edge_index : torch.LongTensor
+            A Tensor that defines the underlying graph connectivity/message
+            passing flow. `edge_index` holds the indices of a general (sparse)
+            assignment matrix of shape `[N, M]`. Its shape must be defined as
+            `[2, num_messages]`, where messages from nodes in `edge_index[0]`
+            are sent to nodes in `edge_index[1]`.
+        batch_index : torch.LongTensor
+            Column vector which maps each node to its respective graph in the batch.
+        expl_label : int
+            Label with respect to which we want the explanation.
+        **kwargs : optional
+            Additional keyword arguments to be passed to the GNN model.
+
+        Returns
+        -------
+        torch.Tensor
+            explainer loss function, which is a weighted sum of different terms.
         """
         # Mask node features
         h = x * self.node_feat_mask.view(1, -1).sigmoid()
@@ -118,13 +136,8 @@ class GNNExplainer(torch.nn.Module):
 
         return loss.sum()
 
-    def explain_graph(self, x, edge_index, batch_index, expl_label: int, **kwargs):
-        """Learns and returns a node feature mask and an edge mask that play a
-        crucial role to explain the prediction made by the GNN for graph
-        classification.
-
+        """
         Args:
-            x (Tensor): The node feature matrix.
             edge_index (LongTensor): The edge indices.
             batch_index (LongTensor): The batch index.
             expl_label (int): Label against which compute cross entropy
@@ -132,7 +145,31 @@ class GNNExplainer(torch.nn.Module):
             **kwargs (optional): Additional arguments passed to the GNN module.
 
         Returns:
-            (torch.tensor, torch.tensor): the node feature mask and edge mask
+        """
+    def explain_graph(
+        self, x, edge_index, batch_index, expl_label: int, **kwargs
+    ) -> (torch.nn.Parameter, torch.nn.Parameter):
+        """Learns and returns a node feature mask and an edge mask that play a
+        crucial role to explain the prediction made by the GNN for graph
+        classification.
+
+        Parameters
+        ----------
+        x : Tensor
+            The node feature matrix.
+        edge_index : torch.LongTensor
+            A Tensor that defines the underlying graph connectivity/message passing flow.
+        batch_index : torch.LongTensor
+            Column vector which maps each node to its respective graph in the batch.
+        expl_label : int
+            Label with respect to which we want the explanation.
+        **kwargs : optional
+            Additional keyword arguments to be passed to the GNN model.
+
+        Returns
+        -------
+        torch.Tensor, torch.Tensor
+            The node feature mask and edge mask
         """
 
         # if len(data.y) > 1:
