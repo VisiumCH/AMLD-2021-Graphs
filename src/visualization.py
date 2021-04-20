@@ -32,7 +32,7 @@ def to_molecule(torch_graph: Data) -> nx.Graph:
     return G
 
 
-def plot_mol(
+def plot_nx_mol(
     G: nx.Graph,
     edge_mask=None,
     edge_type=None,
@@ -139,21 +139,23 @@ def mask_to_dict(edge_mask, data):
     return edge_mask_dict
 
 
-def plot_expl(data, GNNExp_edge_mask, **kwargs):
+def plot_mol(data, edge_mask=None, **kwargs):
     """Draw a molecule (pytorch geom. Data) with an edge mask from GNN Explainer.
-    Wrapper of `plot_mol`.
+    Wrapper of `plot_nx_mol`.
 
     Parameters
     ----------
     data : Data
         Molecule of interest
-    GNNExp_edge_mask : torch.Tensor
-        Edge mask computed by GNNExplainer.
+    edge_mask : torch.Tensor, optional
+        Edge mask computed by GNNExplainer, by default None
     """
     mol = to_molecule(data)
 
-    GNNExp_edge_mask_dict = mask_to_dict(
-        GNNExp_edge_mask,
-        data
-    )
-    plot_mol(mol, edge_mask=GNNExp_edge_mask_dict, **kwargs)
+    if edge_mask is not None:
+        edge_mask = mask_to_dict(
+            edge_mask,
+            data
+        )
+
+    plot_nx_mol(mol, edge_mask=edge_mask, **kwargs)
