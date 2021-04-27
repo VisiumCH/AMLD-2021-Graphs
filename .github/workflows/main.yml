@@ -30,6 +30,6 @@ jobs:
     - name: Lint with flake8
       run: |
         pip install flake8
-        make lint
+        flake8 --per-file-ignores="__init__.py:F401" src
       env:
         VIRTUAL_ENV: TRUE
