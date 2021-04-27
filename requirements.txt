@@ -1,23 +1,12 @@
-# /!\ /!\ /!\ /!\ /!\ /!\ /!\
-# IMPORTANT: Please add each project library's license next to it as a comment, please check predefined requirements as an example.
-# /!\ /!\ /!\ /!\ /!\ /!\ /!\
-
-# meta requirements
-virtualenv
-
-# external requirements
-click               # BSD-3-Clause
-sphinx              # BSD-3-Clause 
-coverage            # MIT
-flake8              # MIT
-python-dotenv       # BSD-3-Clause
+-U pip
+wheel
 ipykernel==5.5.0
 torch==1.8.0
 torch-scatter -f https://pytorch-geometric.com/whl/torch-1.8.0+cu101.html
 torch-sparse -f https://pytorch-geometric.com/whl/torch-1.8.0+cu101.html
-torch-cluster==1.5.9
-torch-spline-conv==1.2.1
 torch-geometric==1.6.3
-ogb==1.3.0
 ipywidgets==7.6.3
 tqdm==4.59.0
+matplotlib
+
+-e .
