@@ -23,7 +23,7 @@ jobs:
         python-version: ${{ matrix.python-version }}
 
     - name: Install dependencies
-      run: make requirements
+      run: xargs -a requirements.txt -L 1 pip install
       env:
         VIRTUAL_ENV: TRUE
 
@@ -33,11 +33,3 @@ jobs:
         make lint
       env:
         VIRTUAL_ENV: TRUE
-
-    - name: Test with coverage
-      run: |
-        pip3 install coverage
-        make test
-      env:
-        VIRTUAL_ENV: TRUE
-
