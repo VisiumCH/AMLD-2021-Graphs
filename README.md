@@ -29,7 +29,7 @@ and it is best to have GPU access. For the workshop users, we have prepared
 
 3) Once you are in the notebook, click on **Runtime**, **Change runtime type** and then select **GPU** as hardware accelerator.
 
-4) Finally, click on **Connect** and you should be ready!
+4) Finally, click on **Connect** and you should be ready to go!
 
 
 ## Requirements
