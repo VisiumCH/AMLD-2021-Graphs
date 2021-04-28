@@ -1,3 +1,4 @@
+"""Module implementing GNNExplainer class"""
 from math import sqrt
 
 import torch
@@ -29,7 +30,7 @@ class GNNExplainer(torch.nn.Module):
         """ Initialize GNNExplainer Class.
 
         Args:
-            model (torch.nn.Module): The GNN module to explain.
+            model (torch.nn.Module): A (pretrained) GNN module to explain.
             epochs (int, optional): The number of epochs to train.
                 (default: :obj:`100`)
             lr (float, optional): The learning rate to apply.
@@ -51,7 +52,7 @@ class GNNExplainer(torch.nn.Module):
 
         For each module contained in the GNN model, the attribute
         __edge_mask__ is set to the initialized edge mask, so that
-        this is automatically taken into account during message passing.
+        it is handled in message passing by pytorch geometric.
 
         Args:
             x (torch tensor): node features
@@ -65,10 +66,6 @@ class GNNExplainer(torch.nn.Module):
         # Edge mask.
         std = torch.nn.init.calculate_gain('relu') * sqrt(2.0 / (2 * N))
         self.edge_mask = torch.nn.Parameter(torch.randn(E) * std)
-
-        # TODO: at some point we should enforce the mask to be symmetric?
-        # Maybe do this iteratively in explain graph? --> but then should
-        # maybe reset the module.__edge_mask__ as below
 
         for module in self.model.modules():
             if isinstance(module, MessagePassing):
@@ -167,9 +164,6 @@ class GNNExplainer(torch.nn.Module):
         torch.Tensor, torch.Tensor
             The node feature mask and edge mask
         """
-
-        # if len(data.y) > 1:
-        #     raise NotImplementedError(f"Can only explain one molecule, recieved {len(data.y)}")
 
         self.model.eval()
         self.__clear_masks__()

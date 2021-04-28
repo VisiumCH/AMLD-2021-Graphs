@@ -1,3 +1,4 @@
+"""Interactive functions for graph explanation"""
 from .explain import GNNExplainer
 from .visualization import plot_mol
 

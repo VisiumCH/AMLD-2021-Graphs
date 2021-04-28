@@ -1,3 +1,4 @@
+"""Metrics and relative visualization"""
 import matplotlib
 import matplotlib.pyplot as plt
 
