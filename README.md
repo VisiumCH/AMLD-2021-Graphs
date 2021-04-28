@@ -18,7 +18,10 @@ for your GNN's predictions, giving a sense to the model outputs.
 
 ## Workshop setup
 
-Running the code of this repository is, for the most part, computionally expensive and it is best to have GPU access. For the workshop users, we have prepared the notebook so that you can easily load them into Google Colab and enjoy the **free GPU services** offered by Google.
+Running the code of this repository is, for the most part, computationally expensive
+and it is best to have GPU access. For the workshop users, we have prepared
+ the notebook so that you can easily load it into Google Colab and enjoy the
+ **free GPU services** offered by Google.
 
 1) Open [Google Colab](https://colab.research.google.com/) and sign in with your Google account or create a new one.
 
