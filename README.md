@@ -53,7 +53,7 @@ run from top to bottom.
 
 We provide some additional code resources in the `src` module, which is
 installed by the requirements files.
-It implements a few more advanced methods which are used through through the notebooks.
+It implements a few more advanced methods which are used through the notebooks.
 
 ## Citations
 
