@@ -12,7 +12,7 @@ results in complex models, whose predictions can be hard to interpret.
 
 In this workshop, you will get familiar with graph data and you will learn the
 fundamental concepts behind graph neural networks. After building and training
-your own GNN, you'll be introduced to GNNExplainer, a model-agnostic framework
+your own GNN, you will be introduced to `GNNExplainer`, a model-agnostic framework
 for interpreting GNN results. Thus, you will be able to visualize explanations
 for your GNN's predictions, giving a sense to the model outputs.
 
