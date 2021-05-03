@@ -23,17 +23,21 @@ and it is best to have GPU access. For the workshop users, we have prepared
  the notebook so that you can easily load it into Google Colab and enjoy the
  **free GPU services** offered by Google.
 
-1) Open [Google Colab](https://colab.research.google.com/) and sign in with your Google account or create a new one.
+1) Open [Google Colab](https://colab.research.google.com/) and sign in with your
+Google account or create a new one.
 
-2) Click on `File` and then `Open notebook...`. Select the **Github** tab, look for **VisiumCH** to find this repository and select the `workshop_notebook.ipynb`.
+2) Click on `File` and then `Open notebook...`. Select the **Github** tab, look
+for **VisiumCH** to find this repository and select the `workshop_notebook.ipynb`.
 
-3) Once you are in the notebook, click on **Runtime**, **Change runtime type** and then select **GPU** as hardware accelerator.
+3) Once you are in the notebook, click on **Runtime**, **Change runtime type**
+and then select **GPU** as hardware accelerator.
 
 4) Finally, click on **Connect** and you should be ready to go!
 
 
 ## Requirements
-For users outside the workshop who would like to experiment more with the repo, here are the installation steps:
+For users outside the workshop who would like to experiment more with the repo,
+here are the installation steps:
 
 Create a virtual environnement and install the dependencies:
 ```bash
