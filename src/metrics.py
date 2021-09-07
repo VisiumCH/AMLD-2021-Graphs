@@ -19,20 +19,18 @@ def compute_accuracy(
 ):
     """Compute accuracy of input model over all samples from the loader.
 
-    Parameters
-    ----------
-    model : torch.nn.Module
-        NN model
-    loader : DataLoader
-        Data loader to evaluate on
-    device : torch.device, optional
-        Device to use, by default None.
-        If None uses cuda if available else cpu.
+    Args:
+        model : torch.nn.Module
+            NN model
+        loader : DataLoader
+            Data loader to evaluate on
+        device : torch.device, optional
+            Device to use, by default None.
+            If None uses cuda if available else cpu.
 
-    Returns
-    -------
-    float
-        Accuracy in [0,1]
+    Returns:
+        float :
+            Accuracy in [0,1]
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -57,12 +55,11 @@ def compute_accuracy(
 def plot_cm(cm, display_labels=["Mutag", "Non Mutag"]):
     """Plot confusion matrix with heatmap.
 
-    Parameters
-    ----------
-    cm : array
-        Confusion matrix
-    display_labels : list, optional
-        Labels of classes in confusion matrix, by default ["Mutag", "Non Mutag"]
+    Args:
+        cm : array
+            Confusion matrix
+        display_labels : list, optional
+            Labels of classes in confusion matrix, by default ["Mutag", "Non Mutag"]
     """
     # Set fontsize for plots
     font = {"size": 20}
@@ -83,20 +80,18 @@ def plot_cm(cm, display_labels=["Mutag", "Non Mutag"]):
 def compute_cm(model, loader_test, device=None):
     """Compute confusion matrix of input model over all samples from the loader.
 
-    Parameters
-    ----------
-    model : torch.nn.Module
-        NN model
-    loader_test : DataLoader
-        Data loader
-    device : torch.device, optional
-        Device to use, by default None.
-        If None uses cuda if available else cpu.
+    Args:
+        model : torch.nn.Module
+            NN model
+        loader_test : DataLoader
+            Data loader
+        device : torch.device, optional
+            Device to use, by default None.
+            If None uses cuda if available else cpu.
 
-    Returns
-    -------
-    array
-        Confusion matrix
+    Returns:
+        array:
+            Confusion matrix
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"

@@ -15,15 +15,13 @@ from torch_geometric.utils import to_networkx  # Conversion function
 def to_molecule(torch_graph: Data) -> nx.Graph:
     """Convert a Pytorch Geometric Data, with attribute _symbols_, into a networkx graph representing a molecule.
 
-    Parameters
-    ----------
-    torch_graph : Data
-        Input Pytoch graph
+    Args:
+        torch_graph : Data
+            Input Pytoch graph
 
-    Returns
-    -------
-    nx.Graph
-        Converted graph
+    Returns:
+        nx.Graph:
+            Converted graph
     """
     G = to_networkx(
         torch_graph,
@@ -43,24 +41,23 @@ def plot_nx_mol(
 ):
     """Draw molecule.
 
-    Parameters
-    ----------
-    G : nx.Graph
-        Graph with _symbols_ node attribute.
-    edge_mask : dict, optional
-        Dictionary of edge/float items, by default None.
-        If given the edges will be color coded. If `treshold` is given,
-        `edge_mask` is used to filter edges with mask lower than value.
-    edge_type : array of float, optional
-        Type of bond encoded as a number, by default None.
-        If given, bond width will represent the type of bond.
-    threshold : float, optional
-        Minumum value of `edge_mask` to include, by default None.
-        Only used if `edge_mask` is given.
-    drop_isolates : bool, optional
-        Wether to remove isolated nodes, by default True if `treshold` is given else False.
-    ax : matplotlib.axes.Axes, optional
-        Axis on which to draw the molecule, by default None
+    Args:
+        G : nx.Graph
+            Graph with _symbols_ node attribute.
+        edge_mask : dict, optional
+            Dictionary of edge/float items, by default None.
+            If given the edges will be color coded. If `treshold` is given,
+            `edge_mask` is used to filter edges with mask lower than value.
+        edge_type : array of float, optional
+            Type of bond encoded as a number, by default None.
+            If given, bond width will represent the type of bond.
+        threshold : float, optional
+            Minumum value of `edge_mask` to include, by default None.
+            Only used if `edge_mask` is given.
+        drop_isolates : bool, optional
+            Wether to remove isolated nodes, by default True if `treshold` is given else False.
+        ax : matplotlib.axes.Axes, optional
+            Axis on which to draw the molecule, by default None
     """
     if drop_isolates is None:
         drop_isolates = True if threshold else False
@@ -120,7 +117,7 @@ def plot_nx_mol(
 
 def mask_to_dict(edge_mask, data):
     """
-    Conver an `edge_mask` in pytorch geometric format to a networkx compatible
+    Convert an `edge_mask` in pytorch geometric format to a networkx compatible
     dictionary (`{(n1, n2) : mask_value}`).
     Multiple edge appearences are averaged.
     """
@@ -144,12 +141,11 @@ def plot_mol(data, edge_mask=None, **kwargs):
     """Draw a molecule (pytorch geom. Data) with an edge mask from GNN Explainer.
     Wrapper of `plot_nx_mol`.
 
-    Parameters
-    ----------
-    data : Data
-        Molecule of interest
-    edge_mask : torch.Tensor, optional
-        Edge mask computed by GNNExplainer, by default None
+    Args:
+        data : Data
+            Molecule of interest
+        edge_mask : torch.Tensor, optional
+            Edge mask computed by GNNExplainer, by default None
     """
     mol = to_molecule(data)
 

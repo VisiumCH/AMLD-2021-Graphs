@@ -1,7 +1,6 @@
 # Shedding light on graph neural networks
 
-This repository contains the code and slides for the _"Shedding light on graph
-neural networks"_ workshop presented by Visium at AMLD 2021.
+This repository contains the code and slides for the _"Shedding Light on Obscure Graph Deep Learning"_ workshop presented by Visium at AMLD 2021.
 
 ## Abstract
 
@@ -36,7 +35,7 @@ and then select **GPU** as hardware accelerator.
 
 
 ## Requirements
-For users outside the workshop who would like to experiment more with the repo,
+For users outside the workshop who would like to experiment more with the repo outside of colab,
 here are the installation steps:
 
 Create a virtual environnement and install the dependencies:
@@ -62,7 +61,7 @@ It implements a few more advanced methods which are used through the notebooks.
 ## Citations
 
 The **GNN Explainer** algorithm we present has been developed by [Ying et al.][GNNExplainer]
-If you intend to use it for anything, please consider citing the original authors in your paper:
+If you intend to use it for anything, please consider citing the original authors in your work:
 
 ```bibtex
 @misc{ying2019gnnexplainer,

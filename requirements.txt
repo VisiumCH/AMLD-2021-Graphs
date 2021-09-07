@@ -1,12 +1,12 @@
--U pip
 wheel
+torch==1.9.0
+torch-geometric
+torch-scatter -f https://pytorch-geometric.com/whl/torch-1.9.0+cu102.html
+torch-sparse -f https://pytorch-geometric.com/whl/torch-1.9.0+cu102.html
 ipykernel==5.5.0
-torch==1.8.0
-torch-scatter -f https://pytorch-geometric.com/whl/torch-1.8.0+cu101.html
-torch-sparse -f https://pytorch-geometric.com/whl/torch-1.8.0+cu101.html
-torch-geometric==1.6.3
 ipywidgets==7.6.3
 tqdm==4.59.0
 matplotlib
+ipywidgets
 
 -e .

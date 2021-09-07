@@ -27,22 +27,20 @@ def explain_graph_visualized(
     """Visualize the GNNExlainer explanation of a trained model for the input data.
     Returns an interactive widget with a threshold slider.
 
-    Parameters
-    ----------
-    model : torch.nn.Module
-        Trained GNN model
-    data : Data
-        Query datapoint
-    explainer_kwargs : dict
-        Keyword argumets for `GNNExplainer` constructor, by default empty (uses
-        constructor defaults).
-    device : torch.device, optional
-        Torch device, by default None
+    Args:
+        model : torch.nn.Module
+            Trained GNN model
+        data : Data
+            Query datapoint
+        explainer_kwargs : dict
+            Keyword argumets for `GNNExplainer` constructor, by default empty (uses
+            constructor defaults).
+        device : torch.device, optional
+            Torch device, by default None
 
-    Returns
-    -------
-    interact
-        Interactive widget
+    Returns:
+        interact:
+            Interactive widget
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
@@ -117,22 +115,20 @@ def make_interactive_explainer(
 ):
     """Create an interactive widget over a test dataset to query for single explanation.
 
-    Parameters
-    ----------
-    model : torch.nn.Module
-        Trained GNN Model
-    dataset_te : pytorch_geometric.Dataset
-        Test dataset
-    explainer_kwargs : dict
-        Keyword argumets for `GNNExplainer` constructor, by default empty (uses
-        constructor defaults).
-    device : torch.device, optional
-        Torch device, by default None
+    Args:
+        model : torch.nn.Module
+            Trained GNN Model
+        dataset_te : pytorch_geometric.Dataset
+            Test dataset
+        explainer_kwargs : dict
+            Keyword argumets for `GNNExplainer` constructor, by default empty (uses
+            constructor defaults).
+        device : torch.device, optional
+            Torch device, by default None
 
-    Returns
-    -------
-    interact
-        Interactive widget
+    Returns:
+        interact:
+            Interactive widget
     """
     if device is None:
         device = "cuda" if torch.cuda.is_available() else "cpu"
