@@ -1,3 +1,6 @@
+# input folder 
+io
+
 # Byte-compiled / optimized / DLL files
 __pycache__/
 *.py[cod]
@@ -49,6 +52,10 @@ coverage.xml
 
 # Django stuff:
 *.log
+
+# Logs
+ml-runs
+notebooks/ml-runs
 
 # Sphinx documentation
 docs/_build/
