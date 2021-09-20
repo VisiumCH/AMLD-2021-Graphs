@@ -21,8 +21,8 @@ class GNNExplainer(torch.nn.Module):
         self,
         model,
         epochs=100,
-        lr=0.01,
-        edge_size=0.005,
+        lr=0.04,
+        edge_size=0.01,
         edge_ent=1.0,
         node_feat_size=0.07,
         node_feat_ent=0.1,
@@ -34,7 +34,7 @@ class GNNExplainer(torch.nn.Module):
             epochs (int, optional): The number of epochs to train.
                 (default: :obj:`100`)
             lr (float, optional): The learning rate to apply.
-                (default: :obj:`0.01`)
+                (default: :obj:`0.04`)
         """
         super(GNNExplainer, self).__init__()
         self.model = model
@@ -82,14 +82,9 @@ class GNNExplainer(torch.nn.Module):
         self.node_feat_masks = None
         self.edge_mask = None
 
-    def graph_loss(
-        self,
-        x: torch.Tensor,
-        edge_index: torch.LongTensor,
-        batch_index: torch.LongTensor,
-        expl_label: int,
-        **kwargs
-    ) -> torch.Tensor:
+    def graph_loss(self, x: torch.Tensor, edge_index: torch.LongTensor,
+                   batch_index: torch.LongTensor, expl_label: int,
+                   **kwargs) -> torch.Tensor:
         """Computes the explainer loss function for explanation
         of graph classificaiton tasks.
 
@@ -116,19 +111,19 @@ class GNNExplainer(torch.nn.Module):
         # Mask node features
         h = x * self.node_feat_mask.view(1, -1).sigmoid()
 
-        # Compute model output
-        model_pred = self.model(h, edge_index, batch_index, **kwargs)
-        pred_proba = torch.softmax(model_pred, 1)
+        # Compute model output (we assume the model already gives log probabilities)
+        model_pred_log_proba = self.model(h, edge_index, batch_index, **kwargs)
 
         # Prediction loss.
-        loss = -torch.log(pred_proba[:, expl_label])
+        loss = -model_pred_log_proba[:, expl_label]
 
         # Edge mask size loss.
         edge_mask = self.edge_mask.sigmoid()
         loss = loss + self.coeffs['edge_size'] * edge_mask.sum()
 
         # Edge mask entropy loss.
-        ent = -edge_mask * torch.log(edge_mask + EPS) - (1 - edge_mask) * torch.log(1 - edge_mask + EPS)
+        ent = -edge_mask * torch.log(edge_mask + EPS) - (
+            1 - edge_mask) * torch.log(1 - edge_mask + EPS)
         loss = loss + self.coeffs['edge_ent'] * ent.mean()
 
         # Feature mask size loss.
@@ -137,9 +132,8 @@ class GNNExplainer(torch.nn.Module):
 
         return loss.sum()
 
-    def explain_graph(
-        self, x, edge_index, batch_index, expl_label: int, **kwargs
-    ) -> (torch.nn.Parameter, torch.nn.Parameter):
+    def explain_graph(self, x, edge_index, batch_index, expl_label: int,
+                      **kwargs) -> (torch.nn.Parameter, torch.nn.Parameter):
         """Learns and returns a node feature mask and an edge mask that play a
         crucial role to explain the prediction made by the GNN for graph
         classification.
@@ -173,7 +167,8 @@ class GNNExplainer(torch.nn.Module):
         for epoch in range(self.epochs):
             optimizer.zero_grad()
 
-            loss = self.graph_loss(x, edge_index, batch_index, expl_label, **kwargs)
+            loss = self.graph_loss(x, edge_index, batch_index, expl_label,
+                                   **kwargs)
             loss.backward()
 
             optimizer.step()
