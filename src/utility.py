@@ -11,7 +11,7 @@ from mpl_toolkits.axes_grid1 import make_axes_locatable
 
 import torch
 
-from torch_geometric.loader import Data, DataLoader
+from torch_geometric.data import Data, DataLoader
 from torch.nn.functional import one_hot
 
 ################################################################################
@@ -118,7 +118,7 @@ def make_interactive_explainer(
     Args:
         model : torch.nn.Module
             Trained GNN Model
-        dataset_te : pytorch_geometric.loaderset
+        dataset_te : pytorch_geometric.Dataset
             Test dataset
         explainer_kwargs : dict
             Keyword argumets for `GNNExplainer` constructor, by default empty (uses

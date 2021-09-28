@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 
 import networkx as nx  # Graph manipulation library
 
-from torch_geometric.loader import Data
+from torch_geometric.data import Data
 from torch_geometric.utils import to_networkx  # Conversion function
 
 ################################################################################
