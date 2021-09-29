@@ -1,9 +1,8 @@
-[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VisiumCH/AMLD-2021-Graphs/blob/master/notebooks/workshop_notebook_sol.ipynb)
-
-
 # Shedding light on graph neural networks
 
 This repository contains the code and slides for the _"Shedding Light on Obscure Graph Deep Learning"_ workshop presented by Visium at AMLD 2021.
+
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VisiumCH/AMLD-2021-Graphs/blob/master/notebooks/workshop_notebook.ipynb)
 
 ## Abstract
 
