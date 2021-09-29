@@ -6,7 +6,7 @@ from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 
 import torch
 
-from torch_geometric.loader import DataLoader
+from torch_geometric.data import DataLoader
 
 ################################################################################
 # METRICS

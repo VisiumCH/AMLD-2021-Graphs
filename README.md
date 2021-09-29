@@ -2,6 +2,8 @@
 
 This repository contains the code and slides for the _"Shedding Light on Obscure Graph Deep Learning"_ workshop presented by Visium at AMLD 2021.
 
+[![Open In Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/VisiumCH/AMLD-2021-Graphs/blob/master/notebooks/workshop_notebook.ipynb)
+
 ## Abstract
 
 Deep learning techniques on graphs have achieved impressive results in recent
@@ -65,7 +67,7 @@ If you intend to use it for anything, please consider citing the original author
 
 ```bibtex
 @misc{ying2019gnnexplainer,
-  title={GNNExplainer: Generating Explanations for Graph Neural Networks}, 
+  title={GNNExplainer: Generating Explanations for Graph Neural Networks},
   author={Rex Ying and Dylan Bourgeois and Jiaxuan You and Marinka Zitnik and Jure Leskovec},
   year={2019},
   eprint={1903.03894},
